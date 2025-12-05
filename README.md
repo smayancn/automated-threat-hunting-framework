@@ -1,273 +1,400 @@
-# Scanner.py - Comprehensive Feature Summary
+# Automated Threat Hunting Framework
 
-## Core Detection Capabilities
+## Enterprise-Grade Security Operations Center (SOC) Platform
 
-### Hybrid Detection System
-- **Dual-mode operation**: Rule-based + Machine Learning detection
-- **ML-only mode**: `--ml` flag disables rule-based detection
-- **Rule-only mode**: Configurable via `USE_ML = False`
-- **Real-time packet capture**: Scapy AsyncSniffer on configurable interface
-- **Bidirectional flow tracking**: 5-tuple flow identification with forward/backward correlation
+A comprehensive, real-time threat detection and response system combining Machine Learning-based network analysis, MITRE ATT&CK framework mapping, OWASP Top 10:2025 vulnerability correlation, and an advanced visual SOC dashboard.
 
-### Rule-Based Detection (Traditional)
-- **ICMP Flood**: 50+ packets per 5-second window
-- **Port Scan**: 20+ unique ports per 5-second window  
-- **Self-filtering**: Ignores port 8000 traffic
-- **Immediate blocking**: Sub-second response time
+---
 
-### Machine Learning Detection
-- **Pre-trained HistGradientBoosting model**: 20-feature flow analysis
-- **Minimum 10 packets per flow**: Ensures statistical reliability
-- **Flow-based features**: Duration, packet lengths, IAT, rates, headers, TCP window
-- **Detectable attacks**: DoS (GoldenEye, Hulk, SlowHTTPTest, Slowloris), DDoS, SSH/FTP Brute Force, SQL Injection, XSS, Infiltration, Bot traffic
-- **Automatic model error handling**: Disables ML on prediction failures
+## Architecture Overview
 
-## Advanced Security Features
+```
+                    +------------------+
+                    |    INTERNET      |
+                    +--------+---------+
+                             |
+                    +--------v---------+
+                    | PERIMETER FIREWALL|
+                    +--------+---------+
+                             |
+                    +--------v---------+
+                    |   CORE SWITCH    |
+                    +--------+---------+
+                             |
+         +-------------------+-------------------+
+         |                   |                   |
++--------v-------+  +--------v-------+  +--------v-------+
+| THREAT SCANNER |  |  SERVER RACK   |  |   DATABASE     |
+| (ML Analysis)  |  |                |  |   CLUSTER      |
++--------+-------+  +----------------+  +----------------+
+         |
++--------v-------+
+|  WORKSTATIONS  |
++----------------+
+```
 
-### IP Whitelist System with Anti-Spoofing
-- **13 pre-configured safe IPs**: Google DNS, Cloudflare DNS, Quad9, OpenDNS, AWS metadata, Microsoft DNS, localhost
-- **Command-line management**: `--whitelist-add`, `--whitelist-remove`, `--whitelist-show`
-- **Multi-layer spoofing detection**:
-  - Rate limiting: 1000 packets/minute threshold
-  - TTL variance analysis: Detects inconsistent hop counts
-  - Early detection: 5-7 packets with variance triggers alert
-  - Port-based heuristics: DNS servers on non-DNS ports flagged
-- **Verification states**: Insufficient data, verified legitimate, or confirmed spoofed
-- **Automatic blocking override**: Spoofed whitelisted IPs blocked despite whitelist
-- **Minimum packet requirement**: 5 packets before trust decisions
+---
 
-### Multi-Stage Attack Chain Reconstruction
-- **Temporal correlation**: 5-minute correlation window
-- **5 attack phases tracked**:
-  - Reconnaissance (port scans)s
-  - DoS/DDoS attacks (all variants)
-  - Brute force (SSH, FTP, Web)
-  - Web attacks (SQL injection, XSS)
-  - Infiltration/C2 (data exfil, bots)
-- **Chain detection**: Triggers when ≥2 different phases from same IP
-- **Attack timeline**: Chronological event reconstruction with timestamps
-- **60-second cooldown**: Prevents alert spam per IP
-- **Epic formatting**: Color-coded alerts with recommended actions
+## Core Components
+
+### 1. Scanner Engine (`scanner.py`)
+
+The heart of the threat detection system featuring:
+
+#### Hybrid Detection Architecture
+- **Machine Learning Classification**: HistGradientBoosting model trained on 20 network flow features
+- **Rule-Based Detection**: Traditional threshold-based analysis for ICMP floods and port scans
+- **Flow-Based Analysis**: Bidirectional network conversation tracking with 5-tuple identification
+
+#### Detection Capabilities
+| Attack Category | Specific Attacks | Detection Method |
+|----------------|------------------|------------------|
+| **DoS/DDoS** | GoldenEye, HULK, Slowloris, SlowHTTPTest, HOIC, LOIC | ML Classifier |
+| **Credential Attacks** | SSH Brute Force, FTP Brute Force, Generic Brute Force | ML Classifier |
+| **Network Attacks** | ICMP Flood, Port Scan, SYN Flood | Rule + ML |
+| **Exfiltration** | Data Infiltration, Bot C2 Communication | ML Classifier |
+| **Web Attacks** | SQL Injection, XSS | ML Classifier |
+
+#### Anti-Spoofing Protection
+- TTL variance analysis across packet streams
+- Rate limiting for whitelisted IP addresses
+- Port-based heuristics for DNS server validation
+- Progressive trust verification (minimum 5 packets)
+
+---
+
+### 2. SOC Dashboard (`gui.py`)
+
+Professional Security Operations Center interface built with Tkinter:
+
+#### Enterprise Network Topology Visualization
+- Real-time network architecture display
+- Attack path visualization with animated particle system
+- Node status indicators (healthy/under attack)
+- Equipment-accurate representations:
+  - Cloud icon for Internet gateway
+  - Rectangular nodes for network equipment
+  - Stacked rectangles for server racks
+  - Multi-monitor display for workstations
+
+#### Attack Animation System
+Each attack type has unique visual characteristics:
+- **Inbound Floods** (DoS/DDoS): High-density particle streams from Internet to targets
+- **Credential Attacks**: Burst patterns targeting authentication servers
+- **Data Exfiltration**: Particles flowing from Database/Servers to Internet
+- **C2 Beacons**: Periodic outbound pulses from compromised workstations
+- **Port Scans**: Sequential probing animations across multiple targets
+
+#### Threat Intelligence Panel
+Dense, verbose threat logging with:
+- Millisecond-precision timestamps
+- ML classifier confidence scores
+- Full MITRE ATT&CK technique details
+- OWASP 2025 vulnerability mappings
+- Recommended response actions
+
+#### Firewall Response Panel
+- Real-time block event logging
+- Blocked IP management interface
+- One-click unblock functionality
+- Response action recommendations
+
+#### Statistics Dashboard
+- Live packet counter
+- Active flow monitoring
+- Threat detection counter
+- Blocked IP counter
+
+---
+
+### 3. Attack Simulation Framework (`attack_demo.sh`)
+
+Comprehensive penetration testing toolkit for security validation:
+
+#### Network Attacks
+- **ICMP Flood**: High-volume ping flood (T1498)
+- **Port Scan**: Service enumeration (T1046)
+
+#### Credential Attacks
+- **SSH Brute Force**: Automated SSH credential testing (T1110.001)
+- **FTP Brute Force**: FTP authentication attacks (T1110.001)
+- **Generic Brute Force**: Multi-protocol credential attacks (T1110)
+
+#### Application Layer DoS
+- **GoldenEye**: HTTP keep-alive exhaustion (T1499.001)
+- **HULK**: Unique URL flood bypassing cache (T1499.002)
+- **Slowloris**: Slow header transmission attack (T1499.002)
+- **SlowHTTPTest**: Slow POST body attack (T1499.002)
+
+#### DDoS Simulation
+- **HOIC**: High Orbit Ion Cannon simulation (T1498)
+- **LOIC-HTTP**: Low Orbit Ion Cannon simulation (T1498)
+
+#### Advanced Threats
+- **Botnet C2**: Command and Control beacon simulation (T1071)
+- **Data Exfiltration**: Sensitive data theft simulation (T1048)
+
+#### Multi-Stage APT Chain
+Full kill chain simulation:
+1. Reconnaissance (Port Scan)
+2. Initial Access (SSH Brute Force)
+3. Impact (DoS Attack)
+4. Exfiltration (Data Theft)
+
+---
 
 ## Threat Intelligence Integration
 
+### MITRE ATT&CK Framework
+
+Complete tactic and technique mapping:
+
+| Tactic | Techniques Covered |
+|--------|-------------------|
+| **Reconnaissance** | T1046 Network Service Scanning |
+| **Initial Access** | T1190 Exploit Public-Facing Application |
+| **Credential Access** | T1110 Brute Force, T1110.001 Password Guessing |
+| **Lateral Movement** | T1021 Remote Services |
+| **Command & Control** | T1071 Application Layer Protocol |
+| **Exfiltration** | T1048 Exfiltration Over Alternative Protocol |
+| **Impact** | T1498 Network DoS, T1499 Endpoint DoS |
+
 ### OWASP Top 10:2025 Mapping
-- **All 10 categories covered**: A01-A10:2025
-- **Attack-to-vulnerability mapping**: Each attack type linked to relevant OWASP categories
-- **Detailed descriptions**: Vulnerability names and security implications
-- **Official documentation links**: Direct OWASP reference URLs
-- **Multi-category support**: Attacks can map to multiple vulnerabilities
 
-### MITRE ATT&CK Framework Integration
-- **17 attack types mapped**: Complete coverage of detectable threats
-- **Full tactic coverage**: Reconnaissance, Initial Access, Credential Access, Lateral Movement, Command & Control, Impact
-- **Technique IDs**: Specific TTPs (e.g., T1046, T1498, T1110)
-- **Kill chain phases**: Attack lifecycle positioning
-- **Integrated display**: Combined OWASP/MITRE telemetry in single output
+| Code | Vulnerability | Related Attacks |
+|------|--------------|-----------------|
+| A01:2025 | Broken Access Control | Port Scan, Infiltration, Bot |
+| A02:2025 | Security Misconfiguration | DoS, DDoS, Port Scan |
+| A04:2025 | Insecure Design | Brute Force, SSH Attacks |
+| A05:2025 | Injection | SQL Injection, XSS |
+| A07:2025 | Authentication Failures | All Brute Force variants |
+| A08:2025 | Data Integrity Failures | XSS, Bot Traffic |
+| A09:2025 | Logging & Alerting Failures | Brute Force, Port Scan |
+| A10:2025 | Mishandling Exceptional Conditions | Slowloris, SlowHTTPTest |
 
-### Threat Intelligence Display
-- **Color-coded telemetry**: ANSI color formatting with box-drawing characters
-- **Consistent formatting**: Unified style across OWASP, MITRE, spoofing, and chain alerts
-- **UTF-8 box drawings**: Professional ╔═╗║╚╝ borders
-- **Emoji indicators**: Visual threat severity markers
-- **Source IP highlighting**: Cyan color-coded attacker identification
+---
 
-## IP Blocking & Management
+## Installation
 
-### Dynamic IP Blocking
-- **Delayed iptables execution**: 20-second grace period for multi-stage detection
-- **Background threading**: Non-blocking firewall rule application
-- **Configurable duration**: 5-second default block time (adjustable)
-- **Automatic unblocking**: Expires after `BLOCK_DURATION`
-- **Persistent tracking**: `blocked_ips` dictionary with timestamps
-- **Graceful degradation**: Works without iptables (WSL/non-Linux)
+### Prerequisites
+```bash
+# System requirements
+- Python 3.8+
+- Linux/WSL with root access
+- Network interface access
 
-### Attack Event Recording
-- **Always-on tracking**: Events recorded even for blocked IPs
-- **AttackEvent class**: Stores IP, type, timestamp, details
-- **Cross-detection recording**: Rule-based and ML events unified
-- **Flow-through recording**: Multiple attacks from same IP tracked
+# Python dependencies
+pip install scapy joblib numpy requests
+```
 
-## Logging & Auditing
+### Setup
+```bash
+# Clone repository
+git clone <repository-url>
+cd automated-threat-hunting-framework
 
-### CSV Logging System
-- **File**: `log.csv` (configurable)
-- **Per-packet logging**: Every processed packet recorded
-- **Format**: Timestamp, IPs, ports, protocol, flags, classification label
-- **Append-only**: No log rotation (manual management)
-- **Forensic trail**: Complete audit history
+# Train ML model (if not present)
+cd training
+python3 training.py
+cd ..
+
+# Verify model exists
+ls -la hgb_model.joblib
+```
+
+---
+
+## Usage
+
+### Starting the SOC Dashboard
+```bash
+# Run with sudo for packet capture capabilities
+sudo python3 gui.py
+
+# In the GUI:
+# 1. Set network interface (default: lo)
+# 2. Browse and select ML model file
+# 3. Click START to begin monitoring
+```
+
+### Running Attack Simulations
+```bash
+# In a separate terminal
+sudo bash attack_demo.sh
+
+# Interactive menu allows:
+# - Individual attack selection
+# - Quick test (5 attack types)
+# - Full APT chain simulation
+```
+
+### Scanner Standalone Mode
+```bash
+# Full hybrid detection
+sudo python3 scanner.py
+
+# ML-only mode
+sudo python3 scanner.py --ml
+
+# Whitelist management
+sudo python3 scanner.py --whitelist-show
+sudo python3 scanner.py --whitelist-add 192.168.1.100
+sudo python3 scanner.py --whitelist-remove 192.168.1.100
+```
+
+---
+
+## Configuration
+
+### Scanner Parameters (`scanner.py`)
+```python
+INTERFACE = "lo"              # Network interface
+MODEL_PATH = "hgb_model.joblib"  # ML model location
+THRESHOLD_ICMP = 50           # ICMP flood threshold
+THRESHOLD_PORTSCAN = 20       # Port scan threshold
+BLOCK_DURATION = 5            # IP block duration (seconds)
+FLOW_TIMEOUT = 600            # Flow expiration (seconds)
+ATTACK_CHAIN_WINDOW = 300     # Event correlation window
+```
+
+### Pre-Configured IP Whitelist
+- Google DNS (8.8.8.8, 8.8.4.4)
+- Cloudflare DNS (1.1.1.1, 1.0.0.1)
+- Quad9 DNS (9.9.9.9)
+- OpenDNS (208.67.222.222, 208.67.220.220)
+- AWS Metadata Service (169.254.169.254)
+
+---
+
+## ML Model Training
+
+### Dataset Requirements
+- CIC-IDS compatible format (.parquet files)
+- Place training data in `training/data/` directory
+
+### Feature Set (20 Features)
+```
+Init Fwd Win Bytes, Fwd Header Length, Fwd Seg Size Min,
+Fwd Packets Length Total, Fwd Packet Length Max, Subflow Fwd Bytes,
+Fwd Packet Length Mean, Bwd Packet Length Mean, Fwd IAT Total,
+Fwd Packets/s, Flow IAT Mean, Bwd Packet Length Std,
+Flow IAT Min, Fwd IAT Min, Flow Packets/s, Flow IAT Max,
+Flow Duration, Avg Fwd Segment Size, Fwd IAT Max, Avg Bwd Segment Size
+```
+
+### Training Command
+```bash
+cd training
+python3 training.py
+# Output: ../hgb_model.joblib
+```
+
+---
+
+## Multi-Stage Attack Chain Detection
+
+The system automatically correlates attacks from the same source IP within a 5-minute window to identify coordinated APT campaigns:
+
+### Detection Phases
+1. **Reconnaissance**: Port scanning, service enumeration
+2. **DoS/DDoS**: Network and application layer attacks
+3. **Credential Attacks**: Brute force attempts
+4. **Web Attacks**: Injection, XSS attempts
+5. **Infiltration/C2**: Data exfiltration, botnet traffic
+
+### Alert Triggers
+- 2+ different attack phases from same IP
+- Generates comprehensive kill chain timeline
+- Provides threat assessment and response recommendations
+
+---
+
+## Response Capabilities
+
+### Automated Actions
+- **IP Blocking**: Automatic iptables rule insertion
+- **Grace Period**: 20-second delay allows multi-stage detection
+- **Auto-Unblock**: Configurable block duration
+
+### Recommended Manual Actions
+Each threat type includes specific response guidance:
+- Firewall rule recommendations
+- IDS signature suggestions
+- Incident response procedures
+- Forensic preservation steps
+
+---
+
+## Output Formats
 
 ### Console Output
-- **Multi-level logging**: Standard, warnings, critical alerts
-- **Color-coded messages**: 7-color ANSI palette
-- **Spoofing alerts**: Dedicated formatted output
-- **ML detection messages**: Whitelisted status indicators
-- **Block/unblock notifications**: Timestamped actions
-- **Suppressed duplicate alerts**: Rate limiting on repetitive messages
+- Color-coded severity levels
+- Box-drawing character formatting
+- Real-time detection notifications
+- OWASP/MITRE correlation display
 
-## Flow Management
+### CSV Logging
+```
+Timestamp, Source IP, Destination IP, Src Port, Dst Port, Protocol, Flags, Label
+```
 
-### Bidirectional Flow Tracking
-- **Flow class**: UUID-identified network conversations
-- **5-tuple keying**: (src_ip, dst_ip, src_port, dst_port, protocol)
-- **Direction detection**: Automatic forward/backward classification
-- **Packet accumulation**: Separate lists for each direction
-- **Header tracking**: IP header lengths per packet
-- **TCP-specific**: Initial window size from SYN packets
-- **10-minute timeout**: Configurable via `FLOW_TIMEOUT`
-- **Automatic cleanup**: Expired flow removal every 5 seconds
+### GUI Display
+- Dense threat intelligence cards
+- Timestamp precision to milliseconds
+- Visual attack topology animations
+- Real-time statistics counters
 
-### Flow Feature Extraction (20 Features)
-1. **Duration**: Flow duration in microseconds
-2-6. **Forward packets**: Total length, max, mean, min segment size, avg segment size
-7-8. **Backward packets**: Mean length, std deviation
-9. **Forward IAT**: Total, min, max inter-arrival time
-10-12. **Flow IAT**: Mean, min, max
-13-14. **Rate metrics**: Flow packets/s, forward packets/s
-15. **Headers**: Forward header length
-16. **Subflow**: Forward bytes
-17. **TCP**: Initial forward window bytes
-
-## Threading Architecture
-
-### 2 Concurrent Threads
-1. **Main thread**: Packet capture, processing pipeline, 1-second unblock loop
-2. **Monitor thread**: 5-second intervals for ICMP/portscan checks, flow cleanup
-
-### Thread Safety
-- **Defaultdict usage**: Thread-safe counters
-- **Daemon threads**: Automatic cleanup on exit
-
-## Configuration & Customization
-
-### Command-Line Arguments
-- `--ml`: ML-only mode
-- `--whitelist-add IP`: Add IP to whitelist
-- `--whitelist-remove IP`: Remove IP from whitelist
-- `--whitelist-show`: Display all whitelisted IPs
-
-### Configurable Parameters
-- `INTERFACE`: Network interface to monitor
-- `MODEL_PATH`: ML model file location
-- `LOG_FILE`: CSV log destination
-- `THRESHOLD_ICMP`: ICMP flood threshold
-- `THRESHOLD_PORTSCAN`: Port scan threshold
-- `MONITOR_WINDOW`: Check interval (seconds)
-- `BLOCK_DURATION`: IP block duration (seconds)
-- `FLOW_TIMEOUT`: Flow expiration time (seconds)
-- `ATTACK_CHAIN_WINDOW`: Event correlation window (300s)
-- `WHITELIST_RATE_LIMIT`: Max packets/min from whitelisted IPs
-- `WHITELIST_TTL_VARIANCE_THRESHOLD`: TTL std deviation limit
-- `WHITELIST_MIN_PACKETS_FOR_VERIFICATION`: Minimum packets for trust
-- `WHITELIST_SPOOF_ALERT_COOLDOWN`: Seconds between spoofing alerts
-
-## Performance & Reliability
-
-### Optimization Features
-- **Async packet capture**: Non-blocking Scapy sniffer
-- **Flow-based ML**: Reduces predictions from per-packet to per-flow
-- **Periodic cleanup**: Prevents memory leaks
-- **One-time alerts**: ML detection alert flag per flow
-- **Efficient data structures**: Defaultdicts, sets for tracking
-
-### Error Handling
-- **ML model fallback**: Disables ML on errors, continues with rules
-- **iptables graceful failure**: Works without firewall access
-- **Missing file handling**: Checks for model existence
-- **Packet layer validation**: Skips non-IP packets
-
-## Security Best Practices
-
-### Self-Protection
-- **Port 8000 filtering**: Prevents detection of scanner's own traffic
-- **Automatic unblocking**: Prevents permanent locks
-- **Whitelist protection**: Preserves critical infrastructure access
-- **Spoofing detection**: Identifies whitelisted IP abuse
-- **Cooldown mechanisms**: Prevents alert storms
-
-### Attack Coverage
-- **Network layer**: ICMP floods
-- **Transport layer**: SYN floods, port scans
-- **Application layer**: HTTP DoS, brute force, injection attacks
-- **Reconnaissance**: Port scanning detection
-- **Persistence**: Bot and C2 traffic detection
-- **Exfiltration**: Data infiltration patterns
-
-## Attack Detection Matrix
-
-| Attack Type | Detection | Threshold | Block Time | OWASP | MITRE |
-|------------|-----------|-----------|------------|-------|-------|
-| ICMP Flood | Rule-based | 50/5s | 5s | A02, A06 | T1498 |
-| Port Scan | Rule-based | 20 ports/5s | 5s | A01, A02, A09 | T1046 |
-| DoS GoldenEye | ML | 10 packets | 5s | A02, A06 | T1498 |
-| DoS Hulk | ML | 10 packets | 5s | A02, A06 | T1498 |
-| DoS SlowHTTPTest | ML | 10 packets | 5s | A02, A06, A10 | T1498 |
-| DoS Slowloris | ML | 10 packets | 5s | A02, A06, A10 | T1498 |
-| DDoS/LOIC | ML | 10 packets | 5s | A02, A06 | T1498 |
-| SSH Brute Force | ML | 10 packets | 5s | A07, A09 | T1110.001 |
-| FTP Brute Force | ML | 10 packets | 5s | A07, A09 | T1110.001 |
-| Web Brute Force | ML | 10 packets | 5s | A07, A09 | T1110 |
-| SQL Injection | ML | 10 packets | 5s | A05, A04 | T1190 |
-| XSS | ML | 10 packets | 5s | A05, A08 | T1189 |
-| Infiltration | ML | 10 packets | 5s | A01, A07 | T1021 |
-| Bot Traffic | ML | 10 packets | 5s | A01, A07 | T1071 |
-| Spoofed Whitelist | Anti-spoofing | 5 packets | 5s | Multiple | Multiple |
-| Multi-Stage Chain | Correlation | 2 phases/5min | 5s + Epic Alert | Multiple | Multiple |
+---
 
 ## System Requirements
 
-### Software Dependencies
-- Python 3.7+
-- Scapy (packet capture)
-- joblib (model loading)
-- numpy (numerical operations)
-- Linux/WSL with iptables (optional, for blocking)
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **CPU** | 2 cores | 4+ cores |
+| **RAM** | 2 GB | 4+ GB |
+| **Python** | 3.8 | 3.10+ |
+| **OS** | Linux/WSL | Ubuntu 22.04 |
+| **Network** | Any interface | Dedicated monitoring |
 
-### Runtime Requirements
-- Root/sudo access (packet capture)
-- Network interface access
-- Pre-trained ML model file (`hgb_model.joblib`)
+---
 
-### Resource Usage
-- **Memory**: ~1KB per active flow, 5-minute event history
-- **CPU**: Low (async capture) + Medium (ML inference every 10 packets)
-- **Disk**: Append-only CSV logging, no rotation
+## Security Considerations
 
-## Operational Modes
+- Requires root/sudo for packet capture
+- Firewall rules require iptables access
+- Whitelist verification prevents spoofing attacks
+- Rate limiting protects against resource exhaustion
+- Graceful degradation when iptables unavailable
 
-### 1. Full Hybrid Mode (Default)
-```bash
-sudo python3 scanner.py
+---
+
+## File Structure
+
 ```
-- Rule-based + ML detection active
-- Maximum coverage and accuracy
-- Best for production
-
-### 2. ML-Only Mode
-```bash
-sudo python3 scanner.py --ml
+automated-threat-hunting-framework/
+├── scanner.py          # Core detection engine
+├── gui.py              # SOC dashboard interface
+├── attack_demo.sh      # Attack simulation toolkit
+├── hgb_model.joblib    # Trained ML model
+├── log.csv             # Detection audit log
+├── training/
+│   ├── training.py     # ML model training script
+│   └── data/           # Training datasets
+└── README.md           # Documentation
 ```
-- Disables rule-based detection
-- Only ML classifications
-- Best for ML model evaluation
 
-### 3. Rule-Only Mode
-```python
-# Edit: USE_ML = False
-sudo python3 scanner.py
-```
-- No ML model required
-- Fast, low resource usage
-- Best for embedded/limited systems
+---
 
-## Key Innovations
+## License
 
-1. **Delayed Firewall Blocking**: 20-second grace period allows multi-stage attack detection before packet dropping
-2. **Whitelisted IP Verification**: Anti-spoofing system prevents abuse of trusted IPs
-3. **Attack Chain Reconstruction**: Temporal correlation reveals coordinated multi-phase attacks
-4. **Dual Framework Mapping**: Simultaneous OWASP and MITRE ATT&CK correlation
-5. **Flow-Based ML**: Network conversation analysis (not packet-level) improves accuracy
-6. **Async Architecture**: Non-blocking design prevents packet loss
-7. **Progressive Trust**: Whitelisted IPs require proof of legitimacy over time
-8. **Unified Telemetry**: Consistent formatting across all alert types
-9. **Zero-Configuration Whitelist**: Pre-loaded with critical infrastructure IPs
+This project is intended for authorized security testing and educational purposes only. Unauthorized use against systems you do not own or have explicit permission to test is illegal.
+
+---
+
+## Contributors
+
+Developed as an advanced cybersecurity demonstration showcasing:
+- Real-time ML-based threat detection
+- Enterprise SOC visualization
+- MITRE ATT&CK and OWASP framework integration
+- Automated incident response capabilities
