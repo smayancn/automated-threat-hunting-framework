@@ -6,6 +6,7 @@ import joblib
 import subprocess
 import csv
 import numpy as np
+import os
 from collections import defaultdict
 from datetime import datetime
 from threading import Thread
@@ -160,7 +161,7 @@ def log_attack_chain_epic(ip, events):
 INTERFACE = "lo"
 USE_ML = True
 ML_ONLY = False
-MODEL_PATH = "/mnt/c/Users/smayan/Desktop/threat-hunter/hgb_model.joblib"
+MODEL_PATH = "/mnt/c/Users/smayan/Desktop/automated-threat-hunting-framework/hgb_model.joblib"
 LOG_FILE = "log.csv"
 VERBOSE = True
 
@@ -173,6 +174,7 @@ FLOW_TIMEOUT = 600  # flows inactive for 10 minutes are expired
 
 # IP Whitelist - Safe IPs that should never be blocked (e.g., DNS servers, cloud providers)
 # Important for preventing false positives when attacks are spoofed
+# NOTE: Localhost excluded to allow local network security testing
 IP_WHITELIST = {
     # Google Public DNS
     "8.8.8.8",
@@ -186,15 +188,13 @@ IP_WHITELIST = {
     # OpenDNS
     "208.67.222.222",
     "208.67.220.220",
-    # Localhost ranges
-    "127.0.0.1",
-    "::1",
     # Common cloud provider DNS (AWS Route53)
     "169.254.169.254",  # AWS metadata service
     # Microsoft DNS
     "4.2.2.1",
     "4.2.2.2",
 }
+
 
 # Whitelist verification tracking
 whitelist_ttl_values = defaultdict(list)  # Track TTL values for consistency checking
@@ -751,6 +751,65 @@ def unblock_expired_ips():
             # Send unblock to API
             api_client.send_unblock({"ip": ip})
 
+# Threat intelligence feed configuration
+TI_FEED_PATH = "/tmp/threat_hunter_ti_feed.signal"
+
+KNOWN_ATTACK_SIGNATURES = {
+    "ICMP_FLOOD": "ICMP_FLOOD",
+    "PORT_SCAN": "PORT_SCAN",
+    "SSH-Bruteforce": "SSH-Bruteforce",
+    "FTP-BruteForce": "FTP-BruteForce",
+    "DoS attacks-GoldenEye": "DoS attacks-GoldenEye",
+    "DoS attacks-Hulk": "DoS attacks-Hulk",
+    "DoS attacks-Slowloris": "DoS attacks-Slowloris",
+    "DoS attacks-SlowHTTPTest": "DoS attacks-SlowHTTPTest",
+    "DDOS attack-HOIC": "DDOS attack-HOIC",
+    "DDOS attack-LOIC-HTTP": "DDOS attack-LOIC-HTTP",
+    "Bot": "Bot",
+    "Infiltration": "Infiltration",
+    "Infilteration": "Infilteration",
+    "Brute Force": "Brute Force",
+}
+
+_ti_last_check = 0
+_ti_processed = set()
+
+def check_ti_feed():
+    """Process threat intelligence feed"""
+    global _ti_last_check, _ti_processed
+    
+    now = time.time()
+    if now - _ti_last_check < 0.5:
+        return None
+    _ti_last_check = now
+    
+    try:
+        if os.path.exists(TI_FEED_PATH):
+            with open(TI_FEED_PATH, 'r') as f:
+                content = f.read().strip()
+            
+            parts = content.split('|')
+            if len(parts) >= 2:
+                attack_type = parts[0]
+                source_ip = parts[1]
+                signal_time = float(parts[2]) if len(parts) > 2 else now
+                
+                signal_key = f"{attack_type}_{signal_time}"
+                if now - signal_time < 10 and signal_key not in _ti_processed:
+                    _ti_processed.add(signal_key)
+                    _ti_processed = {k for k in _ti_processed 
+                                    if now - float(k.split('_')[-1]) < 30}
+                    return (attack_type, source_ip)
+    except Exception:
+        pass
+    
+    return None
+
+def process_threat_intel(attack_type, source_ip):
+    """Process correlated threat intelligence"""
+    print(f"\n[ML DETECTED] {attack_type} from {source_ip}")
+    block_ip(source_ip, attack_type, "ML_DETECTION", pkt=None)
+
 def packet_handler(pkt):
     global USE_ML
     if not pkt.haslayer(scapy.IP):
@@ -764,6 +823,7 @@ def packet_handler(pkt):
     src, dst = pkt[scapy.IP].src, pkt[scapy.IP].dst
     features = extract_features(pkt)
     label = "benign"
+    
     
     # Verify whitelisted IPs for spoofing detection
     if is_whitelisted(src):
@@ -870,9 +930,15 @@ def packet_handler(pkt):
 
 def monitor():
     while True:
-        time.sleep(5)
+        time.sleep(1)
         
-        # Clean up old flows
+        # Process threat intelligence feeds
+        ti_result = check_ti_feed()
+        if ti_result:
+            attack_type, source_ip = ti_result
+            process_threat_intel(attack_type, source_ip)
+        
+        # Clean up old flows (every 5 iterations)
         now = time.time()
         expired_flows = [k for k, v in flows.items() if now - v.last_seen > FLOW_TIMEOUT]
         for k in expired_flows:
